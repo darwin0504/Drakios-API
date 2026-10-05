@@ -3,11 +3,18 @@ import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({ example: 'darwinbedoya05@mail.com' })
-  @IsEmail()
+  @IsEmail(
+    {},
+    {
+      message: 'El correo electrónico no es válido',
+    },
+  )
   correo!: string;
 
-  @ApiProperty({ example: '123456789' })
+  @ApiProperty({ example: 'Password123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(8, {
+    message: 'La contraseña debe tener al menos 8 caracteres',
+  })
   password!: string;
 }

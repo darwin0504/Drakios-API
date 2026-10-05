@@ -7,6 +7,18 @@ import {
   varchar,
 } from 'drizzle-orm/mysql-core';
 
+export const roles = mysqlTable('roles', {
+  id: int('id').autoincrement().primaryKey(),
+
+  nombre: varchar('nombre', { length: 50 }).notNull().unique(),
+
+  descripcion: varchar('descripcion', { length: 255 }),
+
+  createdAt: timestamp('created_at').defaultNow(),
+
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
 export const users = mysqlTable('users', {
   id: int('id').autoincrement().primaryKey(),
 
@@ -17,6 +29,12 @@ export const users = mysqlTable('users', {
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
 
   direccion: varchar('direccion', { length: 255 }),
+
+  roleId: int('role_id')
+    .notNull()
+    .references(() => roles.id),
+
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'),
 
   createdAt: timestamp('created_at').defaultNow(),
 
@@ -38,6 +56,9 @@ export const products = mysqlTable('products', {
 
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
+
+export type Role = typeof roles.$inferSelect;
+export type NewRole = typeof roles.$inferInsert;
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
