@@ -9,10 +9,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 
-import { DB } from '../database/database.provider';
-import type { Database } from '../database/database.provider';
+import { DB } from '../../database/database.provider';
+import type { Database } from '../../database/database.provider';
 
-import { users } from '../db/schema';
+import { users } from '../../db/schema';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 

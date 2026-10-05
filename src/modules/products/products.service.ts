@@ -6,9 +6,9 @@ import {
 } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
 
-import { DB } from '../database/database.provider';
-import type { Database } from '../database/database.provider';
-import { products } from '../db/schema';
+import { DB } from '../../database/database.provider';
+import type { Database } from '../../database/database.provider';
+import { products } from '../../db/schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
