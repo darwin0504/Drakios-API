@@ -103,7 +103,7 @@ export class AuthService {
   }
 
   async logout(userId: number) {
-    // Lógica para cerrar sesión (por ejemplo, invalidar el token)
+    // Lógica para cerrar sesión (invalidar el token)
 
     return {
       message: 'Sesión cerrada correctamente.',
