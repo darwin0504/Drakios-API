@@ -225,6 +225,7 @@ export class AuthService {
         address: users.address,
         roleId: users.roleId,
         status: users.status,
+        emailVerifiedAt: users.emailVerifiedAt,
       })
       .from(users)
       .where(eq(users.email, email))
@@ -242,6 +243,12 @@ export class AuthService {
 
     if (!passwordOk) {
       throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    if (!user.emailVerifiedAt) {
+      throw new UnauthorizedException(
+        'Debes verificar tu correo electrónico antes de iniciar sesión',
+      );
     }
 
     const payload = {
