@@ -9,6 +9,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 type AuthenticatedRequest = Request & {
   user: {
@@ -41,6 +42,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Log out' })
   logout(@Req() req: AuthenticatedRequest) {
     return this.authService.logout(req.user.id);
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify email address' })
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto.token);
   }
 
   @Post('forgot-password')

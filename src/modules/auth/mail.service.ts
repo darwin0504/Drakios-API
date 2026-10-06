@@ -161,4 +161,152 @@ export class MailService {
       );
     }
   }
+
+  async sendEmailVerificationEmail(
+    email: string,
+    verificationUrl: string,
+  ): Promise<void> {
+    const from = this.configService.get<string>('MAIL_FROM');
+
+    if (!from) {
+      throw new InternalServerErrorException('MAIL_FROM no está configurado.');
+    }
+
+    const { error } = await this.resend.emails.send({
+      from,
+      to: email,
+      subject: 'Verifica tu correo electrónico - Drakios',
+      html: `
+          <!DOCTYPE html>
+          <html lang="es">
+            <head>
+              <meta charset="UTF-8" />
+              <meta
+                name="viewport"
+                content="width=device-width, initial-scale=1.0"
+              />
+              <title>
+                Verificación de correo electrónico
+              </title>
+            </head>
+
+            <body
+              style="
+                margin: 0;
+                padding: 0;
+                background-color: #f4f6f8;
+                font-family: Arial, sans-serif;
+              "
+            >
+              <div
+                style="
+                  max-width: 600px;
+                  margin: 40px auto;
+                  background: #ffffff;
+                  border-radius: 12px;
+                  padding: 40px;
+                  box-sizing: border-box;
+                "
+              >
+                <h1
+                  style="
+                    margin-top: 0;
+                    color: #212529;
+                  "
+                >
+                  Verifica tu correo
+                </h1>
+
+                <p
+                  style="
+                    color: #495057;
+                    line-height: 1.6;
+                  "
+                >
+                  Gracias por registrarte
+                  en Drakios.
+                </p>
+
+                <p
+                  style="
+                    color: #495057;
+                    line-height: 1.6;
+                  "
+                >
+                  Para validar tu cuenta,
+                  haz clic en el siguiente botón:
+                </p>
+
+                <div
+                  style="
+                    text-align: center;
+                    margin: 32px 0;
+                  "
+                >
+                  <a
+                    href="${verificationUrl}"
+                    style="
+                      display: inline-block;
+                      background-color: #0d6efd;
+                      color: #ffffff;
+                      padding: 14px 24px;
+                      border-radius: 8px;
+                      text-decoration: none;
+                      font-weight: bold;
+                    "
+                  >
+                    Verificar mi correo
+                  </a>
+                </div>
+
+                <p
+                  style="
+                    color: #6c757d;
+                    line-height: 1.6;
+                  "
+                >
+                  Este enlace será válido durante
+                  <strong>24 horas</strong>.
+                </p>
+
+                <p
+                  style="
+                    color: #6c757d;
+                    line-height: 1.6;
+                  "
+                >
+                  Si tú no creaste esta cuenta,
+                  puedes ignorar este correo.
+                </p>
+
+                <hr
+                  style="
+                    border: 0;
+                    border-top: 1px solid #dee2e6;
+                    margin: 32px 0;
+                  "
+                />
+
+                <p
+                  style="
+                    color: #adb5bd;
+                    font-size: 12px;
+                  "
+                >
+                  Drakios - Sistema comercial
+                </p>
+              </div>
+            </body>
+          </html>
+        `,
+    });
+
+    if (error) {
+      console.error('[MAIL] Error enviando correo de verificación:', error);
+
+      throw new InternalServerErrorException(
+        'No se pudo enviar el correo de verificación.',
+      );
+    }
+  }
 }

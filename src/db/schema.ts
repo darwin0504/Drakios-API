@@ -28,6 +28,8 @@ export const users = mysqlTable('users', {
 
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
 
+  emailVerifiedAt: timestamp('email_verified_at'),
+
   address: varchar('address', { length: 255 }),
 
   roleId: int('role_id')
@@ -42,6 +44,22 @@ export const users = mysqlTable('users', {
 });
 
 export const passwordResetTokens = mysqlTable('password_reset_tokens', {
+  id: int('id').autoincrement().primaryKey(),
+
+  userId: int('user_id')
+    .notNull()
+    .references(() => users.id),
+
+  tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
+
+  expiresAt: timestamp('expires_at').notNull(),
+
+  usedAt: timestamp('used_at'),
+
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const emailVerificationTokens = mysqlTable('email_verification_tokens', {
   id: int('id').autoincrement().primaryKey(),
 
   userId: int('user_id')

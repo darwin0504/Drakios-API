@@ -14,7 +14,12 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { DB } from '../../database/database.provider';
 import type { Database } from '../../database/database.provider';
 
-import { roles, users, passwordResetTokens } from '../../db/schema';
+import {
+  roles,
+  users,
+  passwordResetTokens,
+  emailVerificationTokens,
+} from '../../db/schema';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -92,6 +97,7 @@ export class AuthService {
         address: users.address,
         roleId: users.roleId,
         status: users.status,
+        emailVerifiedAt: users.emailVerifiedAt,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -101,10 +107,110 @@ export class AuthService {
       throw new InternalServerErrorException('Error al registrar usuario');
     }
 
+    try {
+      const verificationToken = randomBytes(32).toString('hex');
+
+      const verificationTokenHash = createHash('sha256')
+        .update(verificationToken)
+        .digest('hex');
+
+      const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await this.db.insert(emailVerificationTokens).values({
+        userId,
+        tokenHash: verificationTokenHash,
+        expiresAt: verificationExpiresAt,
+      });
+
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+      if (!frontendUrl) {
+        throw new InternalServerErrorException(
+          'FRONTEND_URL no está configurada.',
+        );
+      }
+
+      const verificationUrl = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken)}`;
+
+      await this.mailService.sendEmailVerificationEmail(email, verificationUrl);
+    } catch (error) {
+      console.error(
+        '[AUTH] Error generando o enviando correo de verificación:',
+        error,
+      );
+
+      throw new InternalServerErrorException(
+        'El usuario fue registrado, pero no se pudo enviar el correo de verificación.',
+      );
+    }
+
     return {
-      message: 'Usuario registrado correctamente',
+      message:
+        'Usuario registrado correctamente. Revisa tu correo para verificar tu cuenta.',
       user: created,
     };
+  }
+
+  async verifyEmail(token: string) {
+    try {
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+
+      const [verificationToken] = await this.db
+        .select({
+          id: emailVerificationTokens.id,
+          userId: emailVerificationTokens.userId,
+          expiresAt: emailVerificationTokens.expiresAt,
+          usedAt: emailVerificationTokens.usedAt,
+        })
+        .from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.tokenHash, tokenHash))
+        .limit(1);
+
+      if (!verificationToken) {
+        throw new BadRequestException(
+          'El enlace de verificación no es válido.',
+        );
+      }
+
+      if (verificationToken.usedAt) {
+        throw new BadRequestException(
+          'El enlace de verificación ya fue utilizado.',
+        );
+      }
+
+      if (new Date() > verificationToken.expiresAt) {
+        throw new BadRequestException('El enlace de verificación ha expirado.');
+      }
+
+      await this.db
+        .update(users)
+        .set({
+          emailVerifiedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, verificationToken.userId));
+
+      await this.db
+        .update(emailVerificationTokens)
+        .set({
+          usedAt: new Date(),
+        })
+        .where(eq(emailVerificationTokens.id, verificationToken.id));
+
+      return {
+        message: 'Correo electrónico verificado correctamente.',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      console.error('[AUTH] Error verificando correo:', error);
+
+      throw new InternalServerErrorException(
+        'No se pudo verificar el correo electrónico. Inténtalo nuevamente más tarde.',
+      );
+    }
   }
 
   async login(dto: LoginDto) {
