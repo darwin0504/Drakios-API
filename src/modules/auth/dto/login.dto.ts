@@ -9,7 +9,7 @@ export class LoginDto {
       message: 'El correo electrónico no es válido',
     },
   )
-  correo!: string;
+  email!: string;
 
   @ApiProperty({ example: 'Password123' })
   @IsString()

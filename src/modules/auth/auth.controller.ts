@@ -11,8 +11,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 type AuthenticatedRequest = Request & {
   user: {
     id: number;
-    correo: string;
-    nombre: string;
+    email: string;
+    name: string;
   };
 };
 

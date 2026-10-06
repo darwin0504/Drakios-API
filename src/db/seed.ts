@@ -23,12 +23,12 @@ async function main() {
 
     const rolesIniciales = [
       {
-        nombre: 'ADMIN',
-        descripcion: 'Administrador del sistema',
+        name: 'ADMIN',
+        description: 'Administrador del sistema',
       },
       {
-        nombre: 'USER',
-        descripcion: 'Usuario estándar',
+        name: 'USER',
+        description: 'Usuario estándar',
       },
     ];
 
@@ -36,15 +36,15 @@ async function main() {
       const [existingRole] = await db
         .select()
         .from(roles)
-        .where(eq(roles.nombre, role.nombre))
+        .where(eq(roles.name, role.name))
         .limit(1);
 
       if (!existingRole) {
         await db.insert(roles).values(role);
 
-        console.log(`[SEED] Rol creado: ${role.nombre}`);
+        console.log(`[SEED] Rol creado: ${role.name}`);
       } else {
-        console.log(`[SEED] Rol ya existe: ${role.nombre}`);
+        console.log(`[SEED] Rol ya existe: ${role.name}`);
       }
     }
 
@@ -55,7 +55,7 @@ async function main() {
     const [adminRole] = await db
       .select()
       .from(roles)
-      .where(eq(roles.nombre, 'ADMIN'))
+      .where(eq(roles.name, 'ADMIN'))
       .limit(1);
 
     if (!adminRole) {
@@ -66,12 +66,12 @@ async function main() {
     // USUARIO ADMIN
     // ==========================================
 
-    const correoAdmin = 'darwinbedoya05@gmail.com';
+    const emailAdmin = 'darwinbedoya05@gmail.com';
 
     const [userExists] = await db
       .select()
       .from(users)
-      .where(eq(users.correo, correoAdmin))
+      .where(eq(users.email, emailAdmin))
       .limit(1);
 
     if (!userExists) {
@@ -80,10 +80,10 @@ async function main() {
       const passwordHash = await bcrypt.hash(passwordPlano, 10);
 
       await db.insert(users).values({
-        nombre: 'Administrador',
-        correo: correoAdmin,
+        name: 'Administrador',
+        email: emailAdmin,
         passwordHash,
-        direccion: 'Colombia',
+        address: 'Colombia',
         roleId: adminRole.id,
         status: 'ACTIVE',
       });
@@ -99,22 +99,22 @@ async function main() {
 
     const productosDemo = [
       {
-        nombre: 'Laptop Lenovo ThinkPad',
-        precio: '2499.90',
-        descripcion: 'Laptop de trabajo para desarrollo backend.',
-        cantidad: 5,
+        name: 'Laptop Lenovo ThinkPad',
+        price: '2499.90',
+        description: 'Laptop de trabajo para desarrollo backend.',
+        quantity: 5,
       },
       {
-        nombre: 'Mouse Logitech MX',
-        precio: '199.90',
-        descripcion: 'Mouse inalámbrico para productividad.',
-        cantidad: 12,
+        name: 'Mouse Logitech MX',
+        price: '199.90',
+        description: 'Mouse inalámbrico para productividad.',
+        quantity: 12,
       },
       {
-        nombre: 'Monitor Samsung 27',
-        precio: '899.90',
-        descripcion: 'Monitor para programación y multitarea.',
-        cantidad: 7,
+        name: 'Monitor Samsung 27',
+        price: '899.90',
+        description: 'Monitor para programación y multitarea.',
+        quantity: 7,
       },
     ];
 
@@ -122,15 +122,15 @@ async function main() {
       const [productExists] = await db
         .select()
         .from(products)
-        .where(eq(products.nombre, item.nombre))
+        .where(eq(products.name, item.name))
         .limit(1);
 
       if (!productExists) {
         await db.insert(products).values(item);
 
-        console.log(`[SEED] Producto creado: ${item.nombre}`);
+        console.log(`[SEED] Producto creado: ${item.name}`);
       } else {
-        console.log(`[SEED] Producto ya existe: ${item.nombre}`);
+        console.log(`[SEED] Producto ya existe: ${item.name}`);
       }
     }
 

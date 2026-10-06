@@ -10,9 +10,9 @@ import {
 export const roles = mysqlTable('roles', {
   id: int('id').autoincrement().primaryKey(),
 
-  nombre: varchar('nombre', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 50 }).notNull().unique(),
 
-  descripcion: varchar('descripcion', { length: 255 }),
+  description: varchar('description', { length: 255 }),
 
   createdAt: timestamp('created_at').defaultNow(),
 
@@ -22,13 +22,13 @@ export const roles = mysqlTable('roles', {
 export const users = mysqlTable('users', {
   id: int('id').autoincrement().primaryKey(),
 
-  nombre: varchar('nombre', { length: 150 }).notNull(),
+  name: varchar('name', { length: 150 }).notNull(),
 
-  correo: varchar('correo', { length: 180 }).notNull().unique(),
+  email: varchar('email', { length: 180 }).notNull().unique(),
 
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
 
-  direccion: varchar('direccion', { length: 255 }),
+  address: varchar('address', { length: 255 }),
 
   roleId: int('role_id')
     .notNull()
@@ -60,13 +60,13 @@ export const passwordResetTokens = mysqlTable('password_reset_tokens', {
 export const products = mysqlTable('products', {
   id: int('id').autoincrement().primaryKey(),
 
-  nombre: varchar('nombre', { length: 150 }).notNull(),
+  name: varchar('name', { length: 150 }).notNull(),
 
-  precio: decimal('precio', { precision: 10, scale: 2 }).notNull(),
+  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
 
-  descripcion: text('descripcion'),
+  description: text('description'),
 
-  cantidad: int('cantidad').notNull().default(0),
+  quantity: int('quantity').notNull().default(0),
 
   createdAt: timestamp('created_at').defaultNow(),
 

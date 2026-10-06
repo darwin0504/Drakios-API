@@ -9,5 +9,5 @@ export class ForgotPasswordDto {
       message: 'El correo electrónico no es válido',
     },
   )
-  correo!: string;
+  email!: string;
 }

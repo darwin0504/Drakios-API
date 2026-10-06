@@ -20,10 +20,10 @@ export class ProductsService {
     const inserted = await this.db
       .insert(products)
       .values({
-        nombre: dto.nombre,
-        precio: dto.precio.toFixed(2),
-        descripcion: dto.descripcion ?? null,
-        cantidad: dto.cantidad,
+        name: dto.name,
+        price: dto.price.toFixed(2),
+        description: dto.description ?? null,
+        quantity: dto.quantity,
       })
       .$returningId();
 
@@ -58,10 +58,10 @@ export class ProductsService {
     await this.findOne(id);
 
     const data = {
-      ...(dto.nombre !== undefined && { nombre: dto.nombre }),
-      ...(dto.precio !== undefined && { precio: dto.precio.toFixed(2) }),
-      ...(dto.descripcion !== undefined && { descripcion: dto.descripcion }),
-      ...(dto.cantidad !== undefined && { cantidad: dto.cantidad }),
+      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.price !== undefined && { price: dto.price.toFixed(2) }),
+      ...(dto.description !== undefined && { description: dto.description }),
+      ...(dto.quantity !== undefined && { quantity: dto.quantity }),
     };
 
     if (Object.keys(data).length === 0) {

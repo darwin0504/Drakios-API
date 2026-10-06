@@ -1,5 +1,5 @@
 import {
-    BadRequestException,
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -32,14 +32,14 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const correo = dto.correo.trim().toLowerCase();
+    const email = dto.email.trim().toLowerCase();
 
     const [exists] = await this.db
       .select({
         id: users.id,
       })
       .from(users)
-      .where(eq(users.correo, correo))
+      .where(eq(users.email, email))
       .limit(1);
 
     if (exists) {
@@ -49,10 +49,10 @@ export class AuthService {
     const [defaultRole] = await this.db
       .select({
         id: roles.id,
-        nombre: roles.nombre,
+        name: roles.name,
       })
       .from(roles)
-      .where(eq(roles.nombre, 'USER'))
+      .where(eq(roles.name, 'USER'))
       .limit(1);
 
     if (!defaultRole) {
@@ -67,10 +67,10 @@ export class AuthService {
 
     try {
       const result = await this.db.insert(users).values({
-        nombre: dto.nombre.trim(),
-        correo,
+        name: dto.name.trim(),
+        email,
         passwordHash,
-        direccion: dto.direccion?.trim() || null,
+        address: dto.address?.trim() || null,
         roleId: defaultRole.id,
         status: 'ACTIVE',
       });
@@ -85,9 +85,9 @@ export class AuthService {
     const [created] = await this.db
       .select({
         id: users.id,
-        nombre: users.nombre,
-        correo: users.correo,
-        direccion: users.direccion,
+        name: users.name,
+        email: users.email,
+        address: users.address,
         roleId: users.roleId,
         status: users.status,
       })
@@ -106,20 +106,20 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const correo = dto.correo.trim().toLowerCase();
+    const email = dto.email.trim().toLowerCase();
 
     const [user] = await this.db
       .select({
         id: users.id,
-        nombre: users.nombre,
-        correo: users.correo,
+        name: users.name,
+        email: users.email,
         passwordHash: users.passwordHash,
-        direccion: users.direccion,
+        address: users.address,
         roleId: users.roleId,
         status: users.status,
       })
       .from(users)
-      .where(eq(users.correo, correo))
+      .where(eq(users.email, email))
       .limit(1);
 
     if (!user) {
@@ -138,8 +138,8 @@ export class AuthService {
 
     const payload = {
       sub: user.id,
-      correo: user.correo,
-      nombre: user.nombre,
+      email: user.email,
+      name: user.name,
       roleId: user.roleId,
     };
 
@@ -150,9 +150,9 @@ export class AuthService {
       access_token: accessToken,
       user: {
         id: user.id,
-        nombre: user.nombre,
-        correo: user.correo,
-        direccion: user.direccion,
+        name: user.name,
+        email: user.email,
+        address: user.address,
         roleId: user.roleId,
         status: user.status,
       },
@@ -166,16 +166,16 @@ export class AuthService {
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
-    const correo = dto.correo.trim().toLowerCase();
+    const email = dto.email.trim().toLowerCase();
 
     const [user] = await this.db
       .select({
         id: users.id,
-        correo: users.correo,
+        email: users.email,
         status: users.status,
       })
       .from(users)
-      .where(eq(users.correo, correo))
+      .where(eq(users.email, email))
       .limit(1);
 
     if (!user) {
@@ -224,7 +224,7 @@ export class AuthService {
 
     const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
-    await this.mailService.sendPasswordResetEmail(user.correo, resetUrl);
+    await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
 
     return {
       message:

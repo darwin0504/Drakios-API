@@ -13,7 +13,7 @@ export class RegisterDto {
   @MinLength(3, {
     message: 'El nombre debe tener al menos 3 caracteres',
   })
-  nombre!: string;
+  name!: string;
 
   @ApiProperty({ example: 'darwinbedoya05@mail.com' })
   @IsEmail(
@@ -22,7 +22,7 @@ export class RegisterDto {
       message: 'El correo electrónico no es válido',
     },
   )
-  correo!: string;
+  email!: string;
 
   @ApiProperty({ example: 'Password123', minLength: 8 })
   @IsString()
@@ -47,5 +47,5 @@ export class RegisterDto {
   @ApiProperty({ example: 'Bogotá, Colombia', required: false })
   @IsOptional()
   @IsString()
-  direccion?: string;
+  address?: string;
 }

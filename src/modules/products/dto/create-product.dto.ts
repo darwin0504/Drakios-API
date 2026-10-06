@@ -13,13 +13,13 @@ export class CreateProductDto {
   @ApiProperty({ example: 'Teclado mecánico' })
   @IsString()
   @MinLength(2)
-  nombre!: string;
+  name!: string;
 
   @ApiProperty({ example: 129.9 })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  precio!: number;
+  price!: number;
 
   @ApiProperty({
     example: 'Teclado RGB para programación',
@@ -27,11 +27,11 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsString()
-  descripcion?: string;
+  description?: string;
 
   @ApiProperty({ example: 10 })
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  cantidad!: number;
+  quantity!: number;
 }
