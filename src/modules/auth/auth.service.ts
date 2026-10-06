@@ -19,6 +19,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+
 import { MailService } from './mail.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -285,5 +287,79 @@ export class AuthService {
     return {
       message: 'Contraseña actualizada correctamente.',
     };
+  }
+
+  async changePassword(userId: number, dto: ChangePasswordDto) {
+    try {
+      const [user] = await this.db
+        .select({
+          id: users.id,
+          passwordHash: users.passwordHash,
+          status: users.status,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user) {
+        throw new UnauthorizedException(
+          'El usuario no existe o la sesión no es válida.',
+        );
+      }
+
+      if (user.status !== 'ACTIVE') {
+        throw new UnauthorizedException('La cuenta no está activa.');
+      }
+
+      const currentPasswordMatches = await bcrypt.compare(
+        dto.currentPassword,
+        user.passwordHash,
+      );
+
+      if (!currentPasswordMatches) {
+        throw new BadRequestException('La contraseña actual es incorrecta.');
+      }
+
+      const newPasswordMatchesCurrent = await bcrypt.compare(
+        dto.newPassword,
+        user.passwordHash,
+      );
+
+      if (newPasswordMatchesCurrent) {
+        throw new BadRequestException(
+          'La nueva contraseña debe ser diferente a la contraseña actual.',
+        );
+      }
+
+      const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+
+      await this.db
+        .update(users)
+        .set({
+          passwordHash: newPasswordHash,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+
+      return {
+        message: 'Contraseña actualizada correctamente.',
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+
+      console.error(
+        '[AUTH] Error inesperado durante cambio de contraseña:',
+        error,
+      );
+
+      throw new InternalServerErrorException(
+        'No se pudo cambiar la contraseña. Inténtalo nuevamente más tarde.',
+      );
+    }
   }
 }
