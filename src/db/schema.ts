@@ -41,6 +41,22 @@ export const users = mysqlTable('users', {
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
 
+export const passwordResetTokens = mysqlTable('password_reset_tokens', {
+  id: int('id').autoincrement().primaryKey(),
+
+  userId: int('user_id')
+    .notNull()
+    .references(() => users.id),
+
+  tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
+
+  expiresAt: timestamp('expires_at').notNull(),
+
+  usedAt: timestamp('used_at'),
+
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export const products = mysqlTable('products', {
   id: int('id').autoincrement().primaryKey(),
 

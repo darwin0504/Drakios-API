@@ -8,6 +8,7 @@ import { DatabaseModule } from '../../database/database.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { MailService } from './mail.service';
 
 type JwtExpiresIn = NonNullable<JwtModuleOptions['signOptions']>['expiresIn'];
 
@@ -38,6 +39,6 @@ type JwtExpiresIn = NonNullable<JwtModuleOptions['signOptions']>['expiresIn'];
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, MailService],
 })
-export class AuthModule { }
+export class AuthModule {}

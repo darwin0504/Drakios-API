@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -7,21 +8,28 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { eq } from 'drizzle-orm';
+import { createHash, randomBytes } from 'crypto';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { DB } from '../../database/database.provider';
 import type { Database } from '../../database/database.provider';
 
-import { roles, users } from '../../db/schema';
+import { roles, users, passwordResetTokens } from '../../db/schema';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MailService } from './mail.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(DB) private readonly db: Database,
     private readonly jwtService: JwtService,
-  ) { }
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async register(dto: RegisterDto) {
     const correo = dto.correo.trim().toLowerCase();
@@ -154,6 +162,128 @@ export class AuthService {
   async logout(userId: number) {
     return {
       message: 'Sesión cerrada correctamente.',
+    };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const correo = dto.correo.trim().toLowerCase();
+
+    const [user] = await this.db
+      .select({
+        id: users.id,
+        correo: users.correo,
+        status: users.status,
+      })
+      .from(users)
+      .where(eq(users.correo, correo))
+      .limit(1);
+
+    if (!user) {
+      return {
+        message:
+          'Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña.',
+      };
+    }
+
+    if (user.status !== 'ACTIVE') {
+      return {
+        message:
+          'Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña.',
+      };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.db
+      .update(passwordResetTokens)
+      .set({
+        usedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(passwordResetTokens.userId, user.id),
+          isNull(passwordResetTokens.usedAt),
+        ),
+      );
+
+    await this.db.insert(passwordResetTokens).values({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    });
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+    if (!frontendUrl) {
+      throw new InternalServerErrorException(
+        'La URL del frontend no está configurada.',
+      );
+    }
+
+    const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+    await this.mailService.sendPasswordResetEmail(user.correo, resetUrl);
+
+    return {
+      message:
+        'Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña.',
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const tokenHash = createHash('sha256').update(dto.token).digest('hex');
+
+    const [resetToken] = await this.db
+      .select({
+        id: passwordResetTokens.id,
+        userId: passwordResetTokens.userId,
+        expiresAt: passwordResetTokens.expiresAt,
+        usedAt: passwordResetTokens.usedAt,
+      })
+      .from(passwordResetTokens)
+      .where(eq(passwordResetTokens.tokenHash, tokenHash))
+      .limit(1);
+
+    if (!resetToken) {
+      throw new BadRequestException('El enlace de recuperación no es válido.');
+    }
+
+    if (resetToken.usedAt) {
+      throw new BadRequestException(
+        'El enlace de recuperación ya fue utilizado.',
+      );
+    }
+
+    if (new Date() > resetToken.expiresAt) {
+      throw new BadRequestException('El enlace de recuperación ha expirado.');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    await this.db
+      .update(users)
+      .set({
+        passwordHash,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, resetToken.userId));
+
+    await this.db
+      .update(passwordResetTokens)
+      .set({
+        usedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(passwordResetTokens.userId, resetToken.userId),
+          isNull(passwordResetTokens.usedAt),
+        ),
+      );
+
+    return {
+      message: 'Contraseña actualizada correctamente.',
     };
   }
 }

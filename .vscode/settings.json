@@ -4,8 +4,5 @@
   "eslint.validate": ["typescript", "javascript"],
   "eslint.format.enable": true,
   "prettier.endOfLine": "auto",
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "[typescript]": {
-    "editor.defaultFormatter": "TypeScriptTeam.native-preview"
-  }
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
