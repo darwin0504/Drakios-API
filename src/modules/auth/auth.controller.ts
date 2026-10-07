@@ -1,6 +1,6 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
+import { Body, Controller, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -19,6 +19,12 @@ type AuthenticatedRequest = Request & {
   };
 };
 
+type RequestWithCookies = Request & {
+  cookies: {
+    refresh_token?: string;
+  };
+};
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -32,8 +38,8 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'User login' })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    return this.authService.login(dto, res);
   }
 
   @Post('logout')
@@ -42,6 +48,21 @@ export class AuthController {
   @ApiOperation({ summary: 'Log out' })
   logout(@Req() req: AuthenticatedRequest) {
     return this.authService.logout(req.user.id);
+  }
+
+  @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token' })
+  refresh(
+    @Req() req: RequestWithCookies,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies.refresh_token;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token no proporcionado');
+    }
+
+    return this.authService.refresh(refreshToken, res);
   }
 
   @Post('verify-email')

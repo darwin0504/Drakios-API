@@ -19,6 +19,7 @@ import {
   users,
   passwordResetTokens,
   emailVerificationTokens,
+  refreshTokens,
 } from '../../db/schema';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -28,6 +29,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 
 import { MailService } from './mail.service';
 import { ConfigService } from '@nestjs/config';
+import type { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +39,26 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
   ) {}
+
+  private generateRefreshToken() {
+    return randomBytes(32).toString('hex');
+  }
+
+  private async saveRefreshToken(userId: number, token: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await this.db.insert(refreshTokens).values({
+      userId,
+      tokenHash,
+      expiresAt,
+    });
+
+    return {
+      token,
+      expiresAt,
+    };
+  }
 
   async register(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
@@ -213,7 +235,7 @@ export class AuthService {
     }
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, res: Response) {
     const email = dto.email.trim().toLowerCase();
 
     const [user] = await this.db
@@ -259,9 +281,121 @@ export class AuthService {
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
+    const refreshToken = this.generateRefreshToken();
+
+    await this.saveRefreshToken(user.id, refreshToken);
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/auth',
+    });
 
     return {
       message: 'Login correcto',
+      access_token: accessToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        address: user.address,
+        roleId: user.roleId,
+        status: user.status,
+      },
+    };
+  }
+
+  async refresh(refreshToken: string, res: Response) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token no proporcionado');
+    }
+
+    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
+
+    const [storedToken] = await this.db
+      .select({
+        id: refreshTokens.id,
+        userId: refreshTokens.userId,
+        expiresAt: refreshTokens.expiresAt,
+        usedAt: refreshTokens.usedAt,
+      })
+      .from(refreshTokens)
+      .where(eq(refreshTokens.tokenHash, tokenHash))
+      .limit(1);
+
+    if (!storedToken) {
+      throw new UnauthorizedException('Refresh token inválido');
+    }
+
+    if (storedToken.usedAt) {
+      throw new UnauthorizedException('Refresh token inválido');
+    }
+
+    if (storedToken.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedException('Refresh token expirado');
+    }
+
+    const [user] = await this.db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        address: users.address,
+        roleId: users.roleId,
+        status: users.status,
+        emailVerifiedAt: users.emailVerifiedAt,
+      })
+      .from(users)
+      .where(eq(users.id, storedToken.userId))
+      .limit(1);
+
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('El usuario no se encuentra activo');
+    }
+
+    if (!user.emailVerifiedAt) {
+      throw new UnauthorizedException(
+        'Debes verificar tu correo electrónico antes de iniciar sesión',
+      );
+    }
+
+    // Invalidate the current refresh token
+    await this.db
+      .update(refreshTokens)
+      .set({
+        usedAt: new Date(),
+      })
+      .where(eq(refreshTokens.id, storedToken.id));
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      roleId: user.roleId,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    const newRefreshToken = this.generateRefreshToken();
+
+    await this.saveRefreshToken(user.id, newRefreshToken);
+
+    res.cookie('refresh_token', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/auth',
+    });
+
+    return {
+      message: 'Sesión renovada correctamente',
       access_token: accessToken,
       user: {
         id: user.id,
