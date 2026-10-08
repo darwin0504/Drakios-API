@@ -246,10 +246,12 @@ export class AuthService {
         passwordHash: users.passwordHash,
         address: users.address,
         roleId: users.roleId,
+        role: roles.name,
         status: users.status,
         emailVerifiedAt: users.emailVerifiedAt,
       })
       .from(users)
+      .leftJoin(roles, eq(users.roleId, roles.id))
       .where(eq(users.email, email))
       .limit(1);
 
@@ -278,6 +280,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       roleId: user.roleId,
+      role: user.role,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
@@ -344,10 +347,12 @@ export class AuthService {
         email: users.email,
         address: users.address,
         roleId: users.roleId,
+        role: roles.name,
         status: users.status,
         emailVerifiedAt: users.emailVerifiedAt,
       })
       .from(users)
+      .leftJoin(roles, eq(users.roleId, roles.id))
       .where(eq(users.id, storedToken.userId))
       .limit(1);
 
@@ -378,6 +383,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       roleId: user.roleId,
+      role: user.role,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
