@@ -46,8 +46,11 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Log out' })
-  logout(@Req() req: AuthenticatedRequest) {
-    return this.authService.logout(req.user.id);
+  logout(
+    @Req() req: AuthenticatedRequest & RequestWithCookies,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.logout(req.user.id, req.cookies.refresh_token, res);
   }
 
   @Post('refresh')

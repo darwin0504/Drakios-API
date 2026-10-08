@@ -408,7 +408,34 @@ export class AuthService {
     };
   }
 
-  async logout(userId: number) {
+  async logout(
+    userId: number,
+    refreshToken: string | undefined,
+    res: Response,
+  ) {
+    if (refreshToken) {
+      const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
+
+      await this.db
+        .update(refreshTokens)
+        .set({
+          usedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(refreshTokens.userId, userId),
+            eq(refreshTokens.tokenHash, tokenHash),
+          ),
+        );
+    }
+
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/api/auth',
+    });
+
     return {
       message: 'Sesión cerrada correctamente.',
     };
