@@ -16,6 +16,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 
 import { MailService } from '../auth/mail.service';
 import { ConfigService } from '@nestjs/config';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -58,6 +59,47 @@ export class UsersService {
           }
         : null,
     }));
+  }
+
+  async findOne(id: number) {
+    const [user] = await this.db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        address: users.address,
+        status: users.status,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        roleId: roles.id,
+        roleName: roles.name,
+        roleDescription: roles.description,
+      })
+      .from(users)
+      .leftJoin(roles, eq(users.roleId, roles.id))
+      .where(eq(users.id, id))
+      .limit(1);
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      address: user.address,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      role: user.roleId
+        ? {
+            id: user.roleId,
+            name: user.roleName,
+            description: user.roleDescription,
+          }
+        : null,
+    };
   }
 
   async create(dto: CreateUserDto) {
@@ -168,6 +210,63 @@ export class UsersService {
       message:
         'Usuario creado correctamente. Se envió un correo para verificar la cuenta.',
       user: created,
+    };
+  }
+
+  async update(id: number, dto: UpdateUserDto) {
+    const [existingUser] = await this.db
+      .select({
+        id: users.id,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+
+    if (!existingUser) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const updateData: {
+      name?: string;
+      address?: string | null;
+      roleId?: number;
+      status?: 'ACTIVE' | 'INACTIVE';
+    } = {};
+
+    if (dto.name !== undefined) {
+      updateData.name = dto.name.trim();
+    }
+
+    if (dto.address !== undefined) {
+      updateData.address = dto.address.trim() || null;
+    }
+
+    if (dto.role !== undefined) {
+      const [role] = await this.db
+        .select({
+          id: roles.id,
+        })
+        .from(roles)
+        .where(eq(roles.name, dto.role))
+        .limit(1);
+
+      if (!role) {
+        throw new NotFoundException(`El rol ${dto.role} no existe`);
+      }
+
+      updateData.roleId = role.id;
+    }
+
+    if (dto.status !== undefined) {
+      updateData.status = dto.status;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await this.db.update(users).set(updateData).where(eq(users.id, id));
+    }
+
+    return {
+      message: 'Usuario actualizado correctamente',
+      user: await this.findOne(id),
     };
   }
 }
