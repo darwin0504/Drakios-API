@@ -67,7 +67,7 @@ export class RolesController {
   }
 
   @Patch('permissions/:id')
-  @RequirePermissions('roles.permissions.manage')
+  @RequirePermissions('roles.permissions.assign')
   @ApiOperation({ summary: 'Assign permissions to a role' })
   assignPermissions(
     @Param('id', ParseIntPipe) id: number,
