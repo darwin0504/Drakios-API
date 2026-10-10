@@ -4,6 +4,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from 'drizzle-orm/mysql-core';
 
@@ -18,6 +19,45 @@ export const roles = mysqlTable('roles', {
 
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
+
+export const permissions = mysqlTable('permissions', {
+  id: int('id').autoincrement().primaryKey(),
+
+  name: varchar('name', { length: 100 }).notNull().unique(),
+
+  description: varchar('description', { length: 255 }),
+
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const rolePermissions = mysqlTable(
+  'role_permissions',
+  {
+    id: int('id').autoincrement().primaryKey(),
+
+    roleId: int('role_id')
+      .notNull()
+      .references(() => roles.id),
+
+    permissionId: int('permission_id')
+      .notNull()
+      .references(() => permissions.id),
+
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    rolePermissionUnique: uniqueIndex('role_permission_unique').on(
+      table.roleId,
+      table.permissionId,
+    ),
+  }),
+);
+
+export type Permission = typeof permissions.$inferSelect;
+export type NewPermission = typeof permissions.$inferInsert;
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type NewRolePermission = typeof rolePermissions.$inferInsert;
 
 export const users = mysqlTable('users', {
   id: int('id').autoincrement().primaryKey(),

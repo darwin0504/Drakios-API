@@ -1,5 +1,14 @@
-import { Body, Controller, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 
 import { AuthService } from './auth.service';
@@ -51,6 +60,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.logout(req.user.id, req.cookies.refresh_token, res);
+  }
+
+  @Get('me/permissions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get permissions of the authenticated user' })
+  getMyPermissions(@Req() req: AuthenticatedRequest) {
+    return this.authService.getMyPermissions(req.user.id);
   }
 
   @Post('refresh')

@@ -20,6 +20,8 @@ import {
   passwordResetTokens,
   emailVerificationTokens,
   refreshTokens,
+  rolePermissions,
+  permissions,
 } from '../../db/schema';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -641,5 +643,38 @@ export class AuthService {
         'No se pudo cambiar la contraseña. Inténtalo nuevamente más tarde.',
       );
     }
+  }
+
+  async getMyPermissions(userId: number) {
+    const [user] = await this.db
+      .select({
+        roleId: users.roleId,
+        status: users.status,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException(
+        'El usuario no existe o la cuenta no está activa.',
+      );
+    }
+
+    if (!user.roleId) {
+      return { permissions: [] };
+    }
+
+    const assignedPermissions = await this.db
+      .select({
+        name: permissions.name,
+      })
+      .from(rolePermissions)
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, user.roleId));
+
+    return {
+      permissions: assignedPermissions.map((permission) => permission.name),
+    };
   }
 }
