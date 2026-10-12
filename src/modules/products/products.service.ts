@@ -24,6 +24,7 @@ export class ProductsService {
         price: dto.price.toFixed(2),
         description: dto.description ?? null,
         quantity: dto.quantity,
+        status: dto.status ?? 'ACTIVE',
       })
       .$returningId();
 
@@ -62,6 +63,7 @@ export class ProductsService {
       ...(dto.price !== undefined && { price: dto.price.toFixed(2) }),
       ...(dto.description !== undefined && { description: dto.description }),
       ...(dto.quantity !== undefined && { quantity: dto.quantity }),
+      ...(dto.status !== undefined && { status: dto.status }),
     };
 
     if (Object.keys(data).length === 0) {

@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `status` varchar(20) DEFAULT 'ACTIVE' NOT NULL;

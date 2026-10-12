@@ -1,10 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
@@ -13,6 +15,7 @@ export class CreateProductDto {
   @ApiProperty({ example: 'Teclado mecánico' })
   @IsString()
   @MinLength(2)
+  @MaxLength(150)
   name!: string;
 
   @ApiProperty({ example: 129.9 })
@@ -34,4 +37,9 @@ export class CreateProductDto {
   @IsInt()
   @Min(0)
   quantity!: number;
+
+  @ApiProperty({ example: 'ACTIVE' })
+  @IsOptional()
+  @IsIn(['ACTIVE', 'INACTIVE'])
+  status?: 'ACTIVE' | 'INACTIVE';
 }

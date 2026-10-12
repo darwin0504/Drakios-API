@@ -142,6 +142,8 @@ export const products = mysqlTable('products', {
 
   quantity: int('quantity').notNull().default(0),
 
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'),
+
   createdAt: timestamp('created_at').defaultNow(),
 
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
