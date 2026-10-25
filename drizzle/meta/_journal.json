@@ -43,6 +43,13 @@
       "when": 1791827511751,
       "tag": "0005_loose_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1792887005587,
+      "tag": "0006_luxuriant_warhawk",
+      "breakpoints": true
     }
   ]
 }

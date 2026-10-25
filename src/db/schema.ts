@@ -144,6 +144,8 @@ export const products = mysqlTable('products', {
 
   status: varchar('status', { length: 20 }).notNull().default('ACTIVE'),
 
+  imageUrl: varchar('image_url', { length: 500 }),
+
   createdAt: timestamp('created_at').defaultNow(),
 
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),

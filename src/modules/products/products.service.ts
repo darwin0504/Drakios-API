@@ -9,12 +9,18 @@ import { desc, eq } from 'drizzle-orm';
 import { DB } from '../../database/database.provider';
 import type { Database } from '../../database/database.provider';
 import { products } from '../../db/schema';
+import { ProductImageStorageService } from './product-image-storage.service';
+import type { UploadedImage } from './types/uploaded-image.type';
+
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(@Inject(DB) private readonly db: Database) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    private readonly imageStorage: ProductImageStorageService,
+  ) {}
 
   async create(dto: CreateProductDto) {
     const inserted = await this.db
@@ -76,13 +82,49 @@ export class ProductsService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    const product = await this.findOne(id);
 
     await this.db.delete(products).where(eq(products.id, id));
+
+    if (product.imageUrl) {
+      try {
+        await this.imageStorage.remove(product.imageUrl);
+      } catch {
+        // La eliminación del producto ya se completó.
+      }
+    }
 
     return {
       message: 'Producto eliminado correctamente',
       id,
     };
+  }
+
+  async uploadImage(id: number, file: UploadedImage) {
+    const product = await this.findOne(id);
+
+    const newImageUrl = await this.imageStorage.save(id, file);
+
+    try {
+      await this.db
+        .update(products)
+        .set({ imageUrl: newImageUrl })
+        .where(eq(products.id, id));
+    } catch {
+      await this.imageStorage.remove(newImageUrl);
+      throw new InternalServerErrorException(
+        'No fue posible actualizar la imagen del producto',
+      );
+    }
+
+    if (product.imageUrl) {
+      try {
+        await this.imageStorage.remove(product.imageUrl);
+      } catch {
+        /* empty */
+      }
+    }
+
+    return this.findOne(id);
   }
 }
